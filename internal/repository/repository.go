@@ -1,23 +1,23 @@
-package internal
+package repository
 
 import (
-	"internal/models"
+	"internal/model"
 )
 
 type ShopRepository interface {
-	Get() []models.WorkTime
-	Create(shop *models.WorkTime) *models.WorkTime
-	Update(id int, shop *models.WorkTime)
+	Get() []model.WorkTime
+	Create(shop *model.WorkTime) *model.WorkTime
+	Update(id int, shop *model.WorkTime)
 	Delete(id int)
 }
 
 type InMemoryShopRepository struct {
-	repo []models.WorkTime
+	repo []model.WorkTime
 }
 
 func NewInMemoryShopRepository() *InMemoryShopRepository {
 	return &InMemoryShopRepository{
-		repo: []models.WorkTime{
+		repo: []model.WorkTime{
 			{Store: "a", Time: "1"},
 			{Store: "aa", Time: "11"},
 			{Store: "a", Time: "1"},
@@ -26,19 +26,19 @@ func NewInMemoryShopRepository() *InMemoryShopRepository {
 	}
 }
 
-func (r InMemoryShopRepository) Get() []models.WorkTime {
+func (r InMemoryShopRepository) Get() []model.WorkTime {
 	return r.repo
 }
 
-func (r InMemoryShopRepository) Create(shop *models.WorkTime) *models.WorkTime {
+func (r InMemoryShopRepository) Create(shop *model.WorkTime) *model.WorkTime {
 	r.repo = append(r.repo, *shop)
-	return r.repo
+	return shop
 }
 
-func (r InMemoryShopRepository) Update(id int, shop *models.WorkTime) {
-	r.repo[id] = shop
+func (r *InMemoryShopRepository) Update(id int, shop *model.WorkTime) {
+	r.repo[id] = *shop
 }
 
-func (r InMemoryShopRepository) Delete(id int) {
+func (r *InMemoryShopRepository) Delete(id int) {
 	r.repo = append(r.repo[:id], r.repo[id+1:]...)
 }

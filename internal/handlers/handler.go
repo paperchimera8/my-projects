@@ -1,8 +1,9 @@
-package internal
+package handlers
 
 import (
 	"encoding/json"
-	"internal/models"
+	"internal/model"
+	"internal/services"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,10 +33,10 @@ func HandleTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 type ShopHandler struct {
-	service ShopService
+	service services.ShopService
 }
 
-func NewShopHandler(service ShopService) *ShopHandler {
+func NewShopHandler(service services.ShopService) *ShopHandler {
 	return &ShopHandler{
 		service: service,
 	}
@@ -47,7 +48,7 @@ func (s ShopHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var workTime models.WorkTime
+	var workTime model.WorkTime
 	err := json.NewDecoder(r.Body).Decode(&workTime)
 	if err != nil {
 		return
@@ -63,12 +64,12 @@ func (s ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID--
-	var newStore models.WorkTime
+	var newStore model.WorkTime
 	err = json.NewDecoder(r.Body).Decode(&newStore)
 	if err != nil {
 		return
 	}
-	s.service.Update(userID, newStore)
+	s.service.Update(userID, &newStore)
 	err = json.NewEncoder(w).Encode(s.service.Get())
 }
 

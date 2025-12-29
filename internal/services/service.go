@@ -1,34 +1,35 @@
-package internal
+package services
 
 import (
-	"internal/models"
+	"internal/model"
+	"internal/repository"
 )
 
 type ShopServiceStruct struct {
-	repo ShopRepository
+	repo repository.ShopRepository
 }
 
-func NewShopServiceStruct(repo ShopRepository) *ShopServiceStruct {
+func NewShopServiceStruct(repo repository.ShopRepository) *ShopServiceStruct {
 	return &ShopServiceStruct{repo: repo}
 }
 
 type ShopService interface {
-	Get() []models.WorkTime
-	Create(shop *models.WorkTime) *models.WorkTime
-	Update(id int, shop *models.WorkTime)
+	Get() []model.WorkTime
+	Create(shop *model.WorkTime) *model.WorkTime
+	Update(id int, shop *model.WorkTime)
 	Delete(id int)
 }
 
-func (s ShopServiceStruct) Get() []models.WorkTime {
+func (s ShopServiceStruct) Get() []model.WorkTime {
 	return s.repo.Get()
 }
 
-func (s *ShopServiceStruct) Create(shop *models.WorkTime) *models.WorkTime {
+func (s *ShopServiceStruct) Create(shop *model.WorkTime) *model.WorkTime {
 	// тут может быть бизнес-логика (валидация, проверки)
 	return s.repo.Create(shop)
 }
 
-func (s *ShopServiceStruct) Update(id int, shop *models.WorkTime) {
+func (s *ShopServiceStruct) Update(id int, shop *model.WorkTime) {
 	s.repo.Update(id, shop)
 }
 
