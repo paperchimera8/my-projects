@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"internal/model"
+	"shop_list/internal/model"
 )
 
 type ShopRepository interface {

@@ -1,8 +1,8 @@
 package services
 
 import (
-	"internal/model"
-	"internal/repository"
+	"shop_list/internal/model"
+	"shop_list/internal/repository"
 )
 
 type ShopServiceStruct struct {

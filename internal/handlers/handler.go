@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"internal/model"
-	"internal/services"
+	"shop_list/internal/model"
+	"shop_list/internal/services"
 	"net/http"
 	"strconv"
 	"strings"
