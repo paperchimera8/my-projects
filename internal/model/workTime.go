@@ -1,7 +1,7 @@
 package model
 
 type WorkTime struct {
-	Store string
-	Time  string
+	ID   int
+	Name string
+	Time string
 }
-

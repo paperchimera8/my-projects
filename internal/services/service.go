@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"shop_list/internal/model"
 	"shop_list/internal/repository"
 )
@@ -14,25 +15,25 @@ func NewShopServiceStruct(repo repository.ShopRepository) *ShopServiceStruct {
 }
 
 type ShopService interface {
-	Get() []model.WorkTime
-	Create(shop *model.WorkTime) *model.WorkTime
-	Update(id int, shop *model.WorkTime)
-	Delete(id int)
+	Get() *sql.Rows
+	Create(wt model.WorkTime) sql.Result
+	Update(wt model.WorkTime) sql.Result
+	Delete(id int) sql.Result
 }
 
-func (s ShopServiceStruct) Get() []model.WorkTime {
+func (s ShopServiceStruct) Get() *sql.Rows {
 	return s.repo.Get()
 }
 
-func (s *ShopServiceStruct) Create(shop *model.WorkTime) *model.WorkTime {
+func (s *ShopServiceStruct) Create(wt model.WorkTime) sql.Result {
 	// тут может быть бизнес-логика (валидация, проверки)
-	return s.repo.Create(shop)
+	return s.repo.Create(wt)
 }
 
-func (s *ShopServiceStruct) Update(id int, shop *model.WorkTime) {
-	s.repo.Update(id, shop)
+func (s *ShopServiceStruct) Update(wt model.WorkTime) sql.Result {
+	return s.repo.Update(wt)
 }
 
-func (s *ShopServiceStruct) Delete(id int) {
-	s.repo.Delete(id)
+func (s *ShopServiceStruct) Delete(id int) sql.Result {
+	return s.repo.Delete(id)
 }

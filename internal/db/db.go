@@ -6,11 +6,10 @@ import (
 )
 
 func Connect() *sql.DB {
-	connStr := "user=postgres password=postgres dbname=testdb sslmode=disable"
+	connStr := "host=localhost port=5432 user=postgres password=postgres dbname=learnle sslmode=disable"
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 	return db
 }
