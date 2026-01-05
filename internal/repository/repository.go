@@ -6,10 +6,13 @@ import (
 )
 
 type ShopRepository interface {
-	Get() *sql.Rows
+	Get() ([]model.WorkTime, error)
 	Create(wt model.WorkTime) sql.Result
 	Update(wt model.WorkTime) sql.Result
 	Delete(id int) sql.Result
+	CreateUser(u model.User)
+	ComparePas(query string, u model.User) string
+	FindID(query string, u model.User) uint
 }
 
 type InMemoryShopRepository struct {
@@ -22,16 +25,27 @@ func NewInMemoryShopRepository(repo *sql.DB) *InMemoryShopRepository {
 	}
 }
 
-func (r InMemoryShopRepository) Get() *sql.Rows {
+func (r InMemoryShopRepository) Get() ([]model.WorkTime, error) {
 	rows, err := r.repo.Query("SELECT * FROM Shops")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return rows
+	defer rows.Close()
+
+	var shops []model.WorkTime
+	for rows.Next() {
+		var shop model.WorkTime
+		err := rows.Scan(&shop.ID, &shop.Name, &shop.Time)
+		if err != nil {
+			return nil, err
+		}
+		shops = append(shops, shop)
+	}
+	return shops, nil
 }
 
 func (r InMemoryShopRepository) Create(wt model.WorkTime) sql.Result {
-	result, err := r.repo.Exec("INSERT INTO Shops (id, name, time) VALUES ($1, $2, $3)", wt.ID, wt.Name, wt.Time)
+	result, err := r.repo.Exec("INSERT INTO Shops (name, time) VALUES ($1, $2)", wt.Name, wt.Time)
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +53,7 @@ func (r InMemoryShopRepository) Create(wt model.WorkTime) sql.Result {
 }
 
 func (r *InMemoryShopRepository) Update(wt model.WorkTime) sql.Result {
-	query := "UPDATE Shops SET (shopName, shopTime) VALUES ($1, $2) WHERE id = $3"
+	query := "UPDATE Shops SET name = $1, time = $2 WHERE id = $3"
 	result, err := r.repo.Exec(query, wt.Name, wt.Time, wt.ID)
 	if err != nil {
 		panic(err)
@@ -54,4 +68,25 @@ func (r *InMemoryShopRepository) Delete(id int) sql.Result {
 		panic(err)
 	}
 	return result
+}
+
+func (r *InMemoryShopRepository) CreateUser(u model.User) {
+	_, err := r.repo.Exec("INSERT INTO Users (username, password) VALUES ($1, $2) RETURNING id", u.Username, u.Password)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r *InMemoryShopRepository) ComparePas(query string, u model.User) string {
+	var pas string
+	pass := r.repo.QueryRow(query, u.Username)
+	pass.Scan(&pas)
+	return pas
+}
+
+func (r *InMemoryShopRepository) FindID(query string, u model.User) uint {
+	var pas uint
+	pass := r.repo.QueryRow(query, u.Username)
+	pass.Scan(&pas)
+	return pas
 }

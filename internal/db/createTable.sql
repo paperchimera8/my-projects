@@ -1,9 +1,7 @@
-CREATE TABLE Shops (
-    ID INT PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
-    Time VARCHAR(50)  NOT NULL
-);
+ALTER TABLE Users
+    ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
 
-INSERT INTO Shops(ID, Name, Time)
-VALUES (1, 'Пятерочка', '8.30 - 23.00'),
-       (2, 'Магнит', '8.00 - 23.30');
+
+
+
+
