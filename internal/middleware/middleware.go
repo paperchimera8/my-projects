@@ -41,7 +41,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Сохраняем user_id в context для использования в handlers
 		_ = claims["user_id"]
 
 		next.ServeHTTP(w, r)

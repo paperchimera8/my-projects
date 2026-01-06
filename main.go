@@ -3,11 +3,15 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"shop_list/internal/db"
 	"shop_list/internal/handlers"
 	"shop_list/internal/middleware"
 	"shop_list/internal/repository"
 	"shop_list/internal/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -16,7 +20,15 @@ func main() {
 	service := services.NewShopServiceStruct(repo)
 	handler := handlers.NewShopHandler(service)
 
-	// Публичные endpoints (без аутентификации)
+	router := gin.Default()
+	router.POST("/upload", UploadImage)
+	router.Static("/images", "./upload")
+	router.GET("/", func(c *gin.Context) {
+		c.File("./static/index.html")
+	})
+
+	router.Run(":8080")
+
 	http.HandleFunc("/register", handler.Register)
 	http.HandleFunc("/login", handler.Login)
 
@@ -26,4 +38,18 @@ func main() {
 	if err != nil {
 		fmt.Println("Ошибка при запуске сервера:", err)
 	}
+}
+
+func UploadImage(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		return
+	}
+	os.MkdirAll("./upload", os.ModePerm)
+	dst := filepath.Join("./upload", file.Filename)
+	err = c.SaveUploadedFile(file, dst)
+	if err != nil {
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"url": "/images/" + file.Filename})
 }

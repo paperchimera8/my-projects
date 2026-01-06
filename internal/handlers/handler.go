@@ -74,7 +74,7 @@ func (s ShopHandler) Register(w http.ResponseWriter, r *http.Request) {
 	s.service.CreateUser(user)
 }
 
-func (s ShopHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (s *ShopHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var user model.User
 	var token string
 	json.NewDecoder(r.Body).Decode(&user)

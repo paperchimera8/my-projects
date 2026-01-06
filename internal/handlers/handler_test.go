@@ -73,7 +73,6 @@ func TestUpdateHandler(t *testing.T) {
 func TestDeleteHandler(t *testing.T) {
 	handler := setupHandler()
 
-	// Сначала создаем магазин для удаления
 	createBody, _ := json.Marshal(model.WorkTime{
 		Name: "Магазин для удаления",
 		Time: "9.00 - 20.00",
@@ -82,7 +81,6 @@ func TestDeleteHandler(t *testing.T) {
 	createRec := httptest.NewRecorder()
 	handler.Create(createRec, createReq)
 
-	// Потом удаляем магазин с ID=3
 	workTime := model.WorkTime{
 		ID: 3,
 	}

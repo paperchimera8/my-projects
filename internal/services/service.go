@@ -25,7 +25,11 @@ type ShopService interface {
 }
 
 func (s ShopServiceStruct) Get() ([]model.WorkTime, error) {
-	return s.repo.Get()
+	shop, err := s.repo.Get()
+	if err != nil {
+		return nil, err
+	}
+	return shop, nil
 }
 
 func (s *ShopServiceStruct) Create(wt model.WorkTime) sql.Result {
