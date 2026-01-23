@@ -1,92 +1,168 @@
 package repository
 
 import (
-	"database/sql"
+	"context"
+	"fmt"
 	"shop_list/internal/model"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ShopRepository interface {
-	Get() ([]model.WorkTime, error)
-	Create(wt model.WorkTime) sql.Result
-	Update(wt model.WorkTime) sql.Result
-	Delete(id int) sql.Result
-	CreateUser(u model.User)
-	ComparePas(query string, u model.User) string
-	FindID(query string, u model.User) uint
+	Get(ctx context.Context) ([]model.Shop, error)
+	Create(ctx context.Context, wt model.Shop) error
+	Update(ctx context.Context, wt model.Shop) error
+	Delete(ctx context.Context, id string) error
 }
 
-type InMemoryShopRepository struct {
-	repo *sql.DB
+type UserRepository interface {
+	CreateUser(ctx context.Context, u model.User) error
+	ComparePas(ctx context.Context, u model.User) (string, error)
+	FindByID(ctx context.Context, u model.User) (int, error)
 }
 
-func NewInMemoryShopRepository(repo *sql.DB) *InMemoryShopRepository {
-	return &InMemoryShopRepository{
-		repo: repo,
+type GoodRepository interface {
+	CreateGoods(ctx context.Context, g model.Goods) error
+}
+
+type ShopRepositoryConstruct struct {
+	repo *mongo.Collection
+}
+
+func NewShopRepositoryConstruct(client *mongo.Client) *ShopRepositoryConstruct {
+	return &ShopRepositoryConstruct{
+		repo: client.Database("mydb").Collection("shops"),
 	}
 }
 
-func (r InMemoryShopRepository) Get() ([]model.WorkTime, error) {
-	rows, err := r.repo.Query("SELECT * FROM Shops")
+type UserRepositoryConstruct struct {
+	repo *mongo.Collection
+}
+
+func NewUserRepositoryConstruct(client *mongo.Client) *UserRepositoryConstruct {
+	return &UserRepositoryConstruct{
+		repo: client.
+			Database("mydb").
+			Collection("users"),
+	}
+}
+
+type GoodRepositoryConstruct struct {
+	repo *mongo.Collection
+}
+
+func NewGoodRepositoryConstruct(client *mongo.Client) *GoodRepositoryConstruct {
+	return &GoodRepositoryConstruct{
+		repo: client.
+			Database("mydb").
+			Collection("goods"),
+	}
+}
+
+func (r *ShopRepositoryConstruct) Get(ctx context.Context) ([]model.Shop, error) {
+	cursor, err := r.repo.Find(ctx, bson.M{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get shops: %w", err)
 	}
-	defer rows.Close()
+	defer cursor.Close(ctx)
 
-	var shops []model.WorkTime
-	for rows.Next() {
-		var shop model.WorkTime
-		err := rows.Scan(&shop.ID, &shop.Name, &shop.Time)
-		if err != nil {
-			return nil, err
-		}
-		shops = append(shops, shop)
+	var shops []model.Shop
+	err = cursor.All(ctx, &shops)
+	if err != nil {
+		return nil, fmt.Errorf("get shops parsing: %w", err)
 	}
 	return shops, nil
 }
 
-func (r InMemoryShopRepository) Create(wt model.WorkTime) sql.Result {
-	result, err := r.repo.Exec("INSERT INTO Shops (name, time) VALUES ($1, $2)", wt.Name, wt.Time)
+func (r *ShopRepositoryConstruct) Create(ctx context.Context, wt model.Shop) error {
+	_, err := r.repo.InsertOne(ctx, wt)
+	if err != nil {
+		return fmt.Errorf("create shops: %w", err)
+	}
+	return nil
+}
+
+func (r *ShopRepositoryConstruct) Update(ctx context.Context, wt model.Shop) error {
+	filter := bson.D{{Key: "_id", Value: wt.ID}}
+	update := bson.M{
+		"$set": bson.M{
+			"name":       wt.Name,
+			"opentime":   wt.OpenTime,
+			"closetime":  wt.CloseTime,
+			"daysofweek": wt.DaysOfWeek,
+		},
+	}
+	_, err := r.repo.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("update shops: %w", err)
+	}
+	return nil
+}
+
+func (r *ShopRepositoryConstruct) Delete(ctx context.Context, id string) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		panic(err)
 	}
-	return result
-}
-
-func (r *InMemoryShopRepository) Update(wt model.WorkTime) sql.Result {
-	query := "UPDATE Shops SET name = $1, time = $2 WHERE id = $3"
-	result, err := r.repo.Exec(query, wt.Name, wt.Time, wt.ID)
+	filter := bson.M{"_id": objectID}
+	_, err = r.repo.DeleteOne(ctx, filter)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("delete shops: %w", err)
 	}
-	return result
+	return nil
 }
 
-func (r *InMemoryShopRepository) Delete(id int) sql.Result {
-	query := "DELETE FROM Shops WHERE ID = $1"
-	result, err := r.repo.Exec(query, id)
+func (r *UserRepositoryConstruct) CreateUser(ctx context.Context, u model.User) error {
+	_, err := r.repo.InsertOne(ctx, bson.M{
+		"username": u.Username,
+		"password": u.Password,
+	})
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("create user error: %w", err)
 	}
-	return result
+	return nil
 }
 
-func (r *InMemoryShopRepository) CreateUser(u model.User) {
-	_, err := r.repo.Exec("INSERT INTO Users (username, password) VALUES ($1, $2) RETURNING id", u.Username, u.Password)
+func (r *UserRepositoryConstruct) ComparePas(ctx context.Context, u model.User) (string, error) {
+	var pass string
+	result := r.repo.FindOne(ctx,
+		bson.M{
+			"username": u.Username,
+		},
+		options.FindOne().SetProjection(bson.M{
+			"password": 1,
+			"ID":       0, // обязательно, иначе вернётся _id
+		}),
+	)
+	err := result.Decode(&pass)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("compare password error: %w", err)
 	}
+	return pass, nil
 }
 
-func (r *InMemoryShopRepository) ComparePas(query string, u model.User) string {
-	var pas string
-	pass := r.repo.QueryRow(query, u.Username)
-	pass.Scan(&pas)
-	return pas
+func (r *UserRepositoryConstruct) FindByID(ctx context.Context, u model.User) (int, error) {
+	var result int
+	err := r.repo.FindOne(ctx,
+		bson.M{"username": u.Username},
+		options.FindOne().SetProjection(bson.M{
+			"_id":      1,
+			"password": 0,
+		}),
+	).Decode(&result)
+	if err != nil {
+		return 0, fmt.Errorf("findbyid error: %w", err)
+	}
+	return result, nil
 }
 
-func (r *InMemoryShopRepository) FindID(query string, u model.User) uint {
-	var pas uint
-	pass := r.repo.QueryRow(query, u.Username)
-	pass.Scan(&pas)
-	return pas
+func (r *GoodRepositoryConstruct) CreateGoods(ctx context.Context, g model.Goods) error {
+	_, err := r.repo.InsertOne(ctx, g)
+	if err != nil {
+		return fmt.Errorf("create goods eror: %w", err)
+	}
+	return nil
 }
