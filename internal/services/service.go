@@ -1,7 +1,8 @@
 package services
 
 import (
-	"database/sql"
+	"context"
+	"fmt"
 	"shop_list/internal/model"
 	"shop_list/internal/repository"
 )
@@ -14,45 +15,100 @@ func NewShopServiceStruct(repo repository.ShopRepository) *ShopServiceStruct {
 	return &ShopServiceStruct{repo: repo}
 }
 
+type UserServiceStruct struct {
+	repo repository.UserRepository
+}
+
+func NewUserServiceStruct(repo repository.UserRepository) *UserServiceStruct {
+	return &UserServiceStruct{repo: repo}
+}
+
+type GoodServiceStruct struct {
+	repo repository.GoodRepository
+}
+
+func NewGoodServiceStruct(repo repository.GoodRepository) *GoodServiceStruct {
+	return &GoodServiceStruct{repo: repo}
+}
+
 type ShopService interface {
-	Get() ([]model.WorkTime, error)
-	Create(wt model.WorkTime) sql.Result
-	Update(wt model.WorkTime) sql.Result
-	Delete(id int) sql.Result
-	CreateUser(u model.User)
-	ComparePas(query string, u model.User) string
-	FindID(query string, u model.User) uint
+	Get(ctx context.Context) ([]model.Shop, error)
+	Create(ctx context.Context, wt model.Shop) error
+	Update(ctx context.Context, wt model.Shop) error
+	Delete(ctx context.Context, id string) error
 }
 
-func (s ShopServiceStruct) Get() ([]model.WorkTime, error) {
-	shop, err := s.repo.Get()
+type UserService interface {
+	CreateUser(ctx context.Context, u model.User) error
+	ComparePas(ctx context.Context, u model.User) (string, error)
+	FindByID(ctx context.Context, u model.User) (int, error)
+}
+
+type GoodService interface {
+	CreateGoods(ctx context.Context, g model.Goods) error
+}
+
+func (s *ShopServiceStruct) Get(ctx context.Context) ([]model.Shop, error) {
+	res, err := s.repo.Get(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get shops: %w", err)
 	}
-	return shop, nil
+	return res, nil
 }
 
-func (s *ShopServiceStruct) Create(wt model.WorkTime) sql.Result {
+func (s *ShopServiceStruct) Create(ctx context.Context, wt model.Shop) error {
 	// тут может быть бизнес-логика (валидация, проверки)
-	return s.repo.Create(wt)
+	err := s.repo.Create(ctx, wt)
+	if err != nil {
+		return fmt.Errorf("create shops: %w", err)
+	}
+	return nil
 }
 
-func (s *ShopServiceStruct) Update(wt model.WorkTime) sql.Result {
-	return s.repo.Update(wt)
+func (s *ShopServiceStruct) Update(ctx context.Context, wt model.Shop) error {
+	err := s.repo.Update(ctx, wt)
+	if err != nil {
+		return fmt.Errorf("update shops: %w", err)
+	}
+	return nil
 }
 
-func (s *ShopServiceStruct) Delete(id int) sql.Result {
-	return s.repo.Delete(id)
+func (s *ShopServiceStruct) Delete(ctx context.Context, id string) error {
+	err := s.repo.Delete(ctx, id)
+	if err != nil {
+		return fmt.Errorf("delete shops: %w", err)
+	}
+	return nil
 }
 
-func (s *ShopServiceStruct) CreateUser(u model.User) {
-	s.repo.CreateUser(u)
+func (s *UserServiceStruct) CreateUser(ctx context.Context, u model.User) error {
+	err := s.repo.CreateUser(ctx, u)
+	if err != nil {
+		return fmt.Errorf("create user error: %w", err)
+	}
+	return nil
 }
 
-func (s *ShopServiceStruct) ComparePas(query string, u model.User) string {
-	return s.repo.ComparePas(query, u)
+func (s *UserServiceStruct) ComparePas(ctx context.Context, u model.User) (string, error) {
+	res, err := s.repo.ComparePas(ctx, u)
+	if err != nil {
+		return "", fmt.Errorf("compare password error: %w", err)
+	}
+	return res, nil
 }
 
-func (s *ShopServiceStruct) FindID(query string, u model.User) uint {
-	return s.repo.FindID(query, u)
+func (s *UserServiceStruct) FindByID(ctx context.Context, u model.User) (int, error) {
+	res, err := s.repo.FindByID(ctx, u)
+	if err != nil {
+		return 0, fmt.Errorf("findbyid error: %w", err)
+	}
+	return res, nil
+}
+
+func (s *GoodServiceStruct) CreateGoods(ctx context.Context, g model.Goods) error {
+	err := s.repo.CreateGoods(ctx, g)
+	if err != nil {
+		return fmt.Errorf("create goods error: %w", err)
+	}
+	return nil
 }

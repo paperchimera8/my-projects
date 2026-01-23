@@ -12,15 +12,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func setupHandler() *ShopHandler {
 	database := db.Connect()
-	repo := repository.NewInMemoryShopRepository(database)
+	repo := repository.NewShopRepositoryConstruct(database)
 	service := services.NewShopServiceStruct(repo)
 	return NewShopHandler(service)
 }
 
+func userHandler() *UserHandler {
+	database := db.Connect()
+	repo := repository.NewUserRepositoryConstruct(database)
+	service := services.NewUserServiceStruct(repo)
+	return NewUserHandler(service)
+}
 func TestGetHandler(t *testing.T) {
 	handler := setupHandler()
 
@@ -36,9 +43,11 @@ func TestGetHandler(t *testing.T) {
 func TestCreateHandler(t *testing.T) {
 	handler := setupHandler()
 
-	workTime := model.WorkTime{
-		Name: "Тестовый магазин",
-		Time: "10.00 - 22.00",
+	workTime := model.Shop{
+		Name:       "Тестовый магазин",
+		OpenTime:   "09:00",
+		CloseTime:  "18:00",
+		DaysOfWeek: "пн-пт",
 	}
 	body, _ := json.Marshal(workTime)
 
@@ -54,10 +63,11 @@ func TestCreateHandler(t *testing.T) {
 func TestUpdateHandler(t *testing.T) {
 	handler := setupHandler()
 
-	workTime := model.WorkTime{
-		ID:   1,
-		Name: "Пятерочка Обновленная",
-		Time: "8.00 - 23.00",
+	workTime := model.Shop{
+		Name:       "Тестовый магазин",
+		OpenTime:   "09:00",
+		CloseTime:  "18:00",
+		DaysOfWeek: "пн-пт",
 	}
 	body, _ := json.Marshal(workTime)
 
@@ -73,16 +83,19 @@ func TestUpdateHandler(t *testing.T) {
 func TestDeleteHandler(t *testing.T) {
 	handler := setupHandler()
 
-	createBody, _ := json.Marshal(model.WorkTime{
-		Name: "Магазин для удаления",
-		Time: "9.00 - 20.00",
+	createBody, _ := json.Marshal(model.Shop{
+		Name:       "Тестовый магазин",
+		OpenTime:   "09:00",
+		CloseTime:  "18:00",
+		DaysOfWeek: "пн-пт",
 	})
 	createReq := httptest.NewRequest(http.MethodPost, "/stores/", bytes.NewReader(createBody))
 	createRec := httptest.NewRecorder()
 	handler.Create(createRec, createReq)
 
-	workTime := model.WorkTime{
-		ID: 3,
+	objectID := primitive.NewObjectID()
+	workTime := model.Shop{
+		ID: objectID,
 	}
 	body, _ := json.Marshal(workTime)
 

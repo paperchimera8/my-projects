@@ -8,7 +8,7 @@ import (
 
 var secretKey = []byte("my_secret_key")
 
-func CreateToken(userID uint) (string, error) {
+func CreateToken(userID string) (string, error) {
 	// Создаем Claims (данные внутри токена)
 	claims := jwt.MapClaims{
 		"user_id": userID,
